@@ -488,9 +488,7 @@ The project focuses on applying classical and multi-agent search techniques to g
 
 # Authors
 
-**Rupesh G**
-**Sameer Basha**
-**Sandheep Muthiah Suresh**
+**Rupesh G**, **Sameer Basha**, **Sandheep Muthiah Suresh**
 B.Tech Mechanical Engineering  
 National Institute of Technology, Tiruchirappalli (NIT Trichy)
 
