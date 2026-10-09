@@ -140,7 +140,7 @@ def hybrid_pp_cbs(grid, starts, goals, heuristic=None, time_limit=10):
             }
 
         # CBS branch: constrain each of the two conflicting agents.
-        for agent_idx in collision["agents"]:
+        for idx, agent_idx in enumerate(collision["agents"]):
             if time.perf_counter() > deadline:
                 break
 
@@ -148,9 +148,14 @@ def hybrid_pp_cbs(grid, starts, goals, heuristic=None, time_limit=10):
             child.constraints = copy.deepcopy(current.constraints)
             child.paths = [p[:] for p in current.paths]
 
+            if collision["type"] == "edge":
+                loc = collision["loc"] if idx == 0 else [collision["loc"][1], collision["loc"][0]]
+            else:
+                loc = collision["loc"]
+
             child.constraints.append({
                 "agent": agent_idx,
-                "loc": collision["loc"],
+                "loc": loc,
                 "time": collision["time"]
             })
 

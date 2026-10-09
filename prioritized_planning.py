@@ -80,6 +80,7 @@ def independent_astar(grid, starts, goals, heuristic=None):
         'sum_of_costs': total_cost,
         'makespan': makespan,
         'collisions': len(collisions),
+        'collision_list': collisions,
         'time': elapsed,
         'success': success
     }
@@ -165,6 +166,7 @@ def prioritized_planning(grid, starts, goals, heuristic=None):
         'sum_of_costs': total_cost,
         'makespan': makespan,
         'collisions': len(collisions),
+        'collision_list': collisions,
         'time': elapsed,
         'success': success
     }

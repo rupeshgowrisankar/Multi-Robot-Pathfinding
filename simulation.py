@@ -279,6 +279,7 @@ AGENT_COLORS = [
     "blue", "orange", "green", "purple",
     "brown", "pink", "cyan", "magenta"
 ]
+AGENT_LINESTYLES = ["-", "--", "-.", ":", (0, (3, 1, 1, 1)), (0, (5, 2))]
 
 
 def draw_multi_grid(ax, grid, starts, goals):
@@ -342,11 +343,13 @@ def plot_multi_paths(grid, starts, goals, paths, title):
             continue
 
         color = AGENT_COLORS[i % len(AGENT_COLORS)]
+        ls = AGENT_LINESTYLES[i % len(AGENT_LINESTYLES)]
         xs = [x + 0.5 for x, y in path]
         ys = [y + 0.5 for x, y in path]
 
         ax.plot(
             xs, ys,
+            linestyle=ls,
             color=color,
             linewidth=3,
             label=f"Agent {i}"
@@ -378,6 +381,7 @@ def animate_multi_paths(grid, starts, goals, paths, title, interval=250):
 
         for i, path in enumerate(paths):
             color = AGENT_COLORS[i % len(AGENT_COLORS)]
+            ls = AGENT_LINESTYLES[i % len(AGENT_LINESTYLES)]
 
             if not path:
                 continue
@@ -388,9 +392,9 @@ def animate_multi_paths(grid, starts, goals, paths, title, interval=250):
 
             ax.plot(
                 xs, ys,
-                "--",
+                linestyle=ls,
                 color=color,
-                alpha=0.25
+                alpha=0.35
             )
 
             # Robot waits at goal after reaching it
@@ -439,9 +443,24 @@ def _print_result(name, result):
     print("-" * len(name))
     print("Sum of costs:", result["sum_of_costs"])
     print("Makespan:", result["makespan"])
-    print("Collisions:", result.get("collisions", 0))
+    col_list = result.get("collision_list", [])
+    if col_list:
+        e_cnt = sum(1 for c in col_list if c['type'] == 'edge')
+        v_cnt = sum(1 for c in col_list if c['type'] == 'vertex')
+        details = []
+        if e_cnt:
+            details.append(f"{e_cnt} edge")
+        if v_cnt:
+            details.append(f"{v_cnt} vertex")
+        print(f"Collisions: {result.get('collisions', 0)} ({', '.join(details)})")
+    else:
+        print("Collisions:", result.get("collisions", 0))
     print("Runtime:", f"{result['time'] * 1000:.2f} ms")
     print("Success:", result["success"])
+
+    if name == "CBS":
+        print("Initial unconstrained conflicts:", result.get("initial_collisions", 0))
+        print("CT nodes expanded:", result.get("ct_nodes_expanded"))
 
     if name == "H-PCBS":
         print("Initial PP success:", result.get("initial_pp_success"))
@@ -451,12 +470,12 @@ def _print_result(name, result):
         print("Replans:", result.get("replans"))
 
 
-def compare_q2():
+def compare_q2(seed=127):
     """Compare all four multi-agent algorithms on the same instance."""
     grid, starts, goals = Grid.generate_multi_agent(
         15, 15, 4,
         obstacle_density=0.20,
-        seed=17
+        seed=seed
     )
 
     results = [
@@ -483,11 +502,13 @@ def compare_q2():
                 continue
 
             color = AGENT_COLORS[i % len(AGENT_COLORS)]
+            ls = AGENT_LINESTYLES[i % len(AGENT_LINESTYLES)]
             xs = [x + 0.5 for x, y in path]
             ys = [y + 0.5 for x, y in path]
 
             ax.plot(
                 xs, ys,
+                linestyle=ls,
                 color=color,
                 linewidth=2.5,
                 label=f"A{i}"
@@ -516,12 +537,12 @@ def compare_q2():
     plt.show()
 
 
-def simulate_hybrid_q2():
+def simulate_hybrid_q2(seed=127):
     """Demonstrate the proposed H-PCBS algorithm."""
     grid, starts, goals = Grid.generate_multi_agent(
         15, 15, 4,
         obstacle_density=0.20,
-        seed=17
+        seed=seed
     )
 
     result = hybrid_pp_cbs(
@@ -555,12 +576,12 @@ def simulate_hybrid_q2():
     )
 
 
-def simulate_q2():
+def simulate_q2(seed=127):
     """Demonstrate all four Q2 algorithms."""
     grid, starts, goals = Grid.generate_multi_agent(
         15, 15, 4,
         obstacle_density=0.20,
-        seed=17
+        seed=seed
     )
 
     print("\nQ2 MULTI-ROBOT SIMULATION")
@@ -609,14 +630,15 @@ def main():
     parser.add_argument("--q2hybrid", action="store_true")
     parser.add_argument("--q2compare", action="store_true")
     parser.add_argument("--all", action="store_true")
+    parser.add_argument("--seed", type=int, default=127, help="Random seed for multi-agent generation")
 
     args = parser.parse_args()
 
     if args.all:
         simulate_q1_all()
         compare_q1_paths()
-        simulate_q2()
-        compare_q2()
+        simulate_q2(args.seed)
+        compare_q2(args.seed)
         return
 
     if args.q1:
@@ -626,13 +648,13 @@ def main():
         compare_q1_paths()
 
     if args.q2:
-        simulate_q2()
+        simulate_q2(args.seed)
 
     if args.q2hybrid:
-        simulate_hybrid_q2()
+        simulate_hybrid_q2(args.seed)
 
     if args.q2compare:
-        compare_q2()
+        compare_q2(args.seed)
 
     if not any([
         args.q1, args.q1compare, args.q2,

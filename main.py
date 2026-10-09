@@ -9,7 +9,7 @@ from benchmarks import run_q1_benchmarks, run_q2_benchmarks, summarize_q1, summa
 from visualize import plot_grid, plot_multi_agent, plot_q1_results, plot_q2_results
 
 
-def run_demo():
+def run_demo(multi_agent_seed=128):
     """Run a visual demo of single and multi-agent pathfinding."""
     print("\n" + "=" * 60)
     print("DEMO: Single-Agent A* Pathfinding")
@@ -37,17 +37,28 @@ def run_demo():
     print("=" * 60)
     
     # Multi-agent demo
-    grid, starts, goals = Grid.generate_multi_agent(15, 15, 3, obstacle_density=0.15, seed=42)
+    grid, starts, goals = Grid.generate_multi_agent(15, 15, 3, obstacle_density=0.15, seed=multi_agent_seed)
     print(f"Grid: {grid}")
     for i in range(len(starts)):
         print(f"  Agent {i}: {starts[i]} -> {goals[i]}")
     
     # Independent A*
     result_ind = independent_astar(grid, starts, goals)
+    col_list = result_ind.get('collision_list', [])
+    details = []
+    e_cnt = sum(1 for c in col_list if c['type'] == 'edge')
+    v_cnt = sum(1 for c in col_list if c['type'] == 'vertex')
+    if e_cnt:
+        details.append(f"{e_cnt} edge swap")
+    if v_cnt:
+        details.append(f"{v_cnt} vertex")
+    col_str = f"{result_ind['collisions']}"
+    if details:
+        col_str += f" ({', '.join(details)})"
     print(f"\nIndependent A*:")
-    print(f"  Sum of Costs: {result_ind['sum_of_costs']}, Collisions: {result_ind['collisions']}")
+    print(f"  Sum of Costs: {result_ind['sum_of_costs']}, Collisions: {col_str}")
     plot_multi_agent(grid, result_ind['paths'], starts, goals,
-                    title=f"Independent A* (Collisions: {result_ind['collisions']})",
+                    title=f"Independent A* (Collisions: {col_str})",
                     filename='demo_independent_astar.png')
     
     # Prioritized Planning
@@ -61,7 +72,7 @@ def run_demo():
     # CBS
     result_cbs = cbs(grid, starts, goals)
     print(f"\nCBS:")
-    print(f"  Sum of Costs: {result_cbs['sum_of_costs']}, Collisions: 0 (guaranteed)")
+    print(f"  Sum of Costs: {result_cbs['sum_of_costs']}, Solution Collisions: {result_cbs['collisions']} (all {result_cbs.get('initial_collisions', 0)} initial conflicts successfully resolved)")
     print(f"  CT Nodes Expanded: {result_cbs['ct_nodes_expanded']}")
     plot_multi_agent(grid, result_cbs['paths'], starts, goals,
                     title=f"CBS - Optimal (Sum of Costs: {result_cbs['sum_of_costs']})",
@@ -86,8 +97,9 @@ def run_q1():
     summarize_q1(results)
     
     print("\nGenerating plots...")
-    plot_q1_results(results, output_dir='.')
-    print("Q1 complete! Check the generated PNG files.")
+    os.makedirs('results/q1', exist_ok=True)
+    plot_q1_results(results, output_dir='results/q1')
+    print("Q1 complete! Check the generated PNG files in results/q1/.")
 
 
 def run_q2():
@@ -107,8 +119,9 @@ def run_q2():
     summarize_q2(results)
     
     print("\nGenerating plots...")
-    plot_q2_results(results, output_dir='.')
-    print("Q2 complete! Check the generated PNG files.")
+    os.makedirs('results/q2', exist_ok=True)
+    plot_q2_results(results, output_dir='results/q2')
+    print("Q2 complete! Check the generated PNG files in results/q2/.")
 
 
 def main():

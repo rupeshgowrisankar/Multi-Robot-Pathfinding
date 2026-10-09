@@ -101,6 +101,7 @@ def cbs(grid, starts, goals, heuristic=None, time_limit=30):
         root.paths.append(result['path'])
     
     root.cost = sum(len(p) - 1 for p in root.paths)
+    root_collisions = detect_collisions(root.paths)
     
     # High-level search
     open_list = []
@@ -128,20 +129,28 @@ def cbs(grid, starts, goals, heuristic=None, time_limit=30):
                 'paths': paths,
                 'sum_of_costs': current_node.cost,
                 'makespan': max(len(p) - 1 for p in paths),
+                'collisions': len(collisions_check),
+                'initial_collisions': len(root_collisions),
+                'initial_collision_list': root_collisions,
                 'ct_nodes_expanded': ct_nodes_expanded,
                 'time': elapsed,
                 'success': True
             }
         
         # Branch: create two child nodes
-        for agent_idx in collision['agents']:
+        for idx, agent_idx in enumerate(collision['agents']):
             child = CTNode()
             child.constraints = copy.deepcopy(current_node.constraints)
             
             # Add new constraint for this agent
+            if collision['type'] == 'edge':
+                loc = collision['loc'] if idx == 0 else [collision['loc'][1], collision['loc'][0]]
+            else:
+                loc = collision['loc']
+            
             new_constraint = {
                 'agent': agent_idx,
-                'loc': collision['loc'],
+                'loc': loc,
                 'time': collision['time']
             }
             child.constraints.append(new_constraint)

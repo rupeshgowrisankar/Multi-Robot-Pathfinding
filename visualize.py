@@ -17,6 +17,7 @@ COLORS = {
 
 AGENT_COLORS = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6',
                 '#1abc9c', '#e67e22', '#34495e', '#e91e63', '#00bcd4']
+AGENT_LINESTYLES = ['-', '--', '-.', ':', (0, (3, 1, 1, 1)), (0, (5, 2))]
 
 
 def plot_grid(grid, path=None, title="Grid", filename=None, show=False):
@@ -94,10 +95,11 @@ def plot_multi_agent(grid, paths, starts, goals, title="Multi-Agent Paths", file
     # Draw each agent's path
     for i, path in enumerate(paths):
         color = AGENT_COLORS[i % len(AGENT_COLORS)]
+        ls = AGENT_LINESTYLES[i % len(AGENT_LINESTYLES)]
         if path and len(path) > 1:
             path_x = [p[0] + 0.5 for p in path]
             path_y = [p[1] + 0.5 for p in path]
-            ax.plot(path_x, path_y, '-', color=color, linewidth=2.5, alpha=0.7, label=f'Agent {i}')
+            ax.plot(path_x, path_y, linestyle=ls, color=color, linewidth=2.5, alpha=0.8, label=f'Agent {i}')
         
         # Draw start
         ax.add_patch(plt.Rectangle((starts[i][0], starts[i][1]), 1, 1,
@@ -207,10 +209,20 @@ def plot_q1_results(results, output_dir='.'):
     size = sorted(results.keys())[len(results) // 2]  # middle size
     density = sorted(results[size].keys())[len(results[size]) // 2]
     
+    heuristic_styles = {
+        'Manhattan': {'color': '#2980b9', 'linestyle': '-', 'marker': 'o', 'markersize': 5, 'linewidth': 2.5, 'alpha': 0.85},
+        'Euclidean': {'color': '#e74c3c', 'linestyle': '--', 'marker': 's', 'markersize': 4, 'linewidth': 2.0, 'alpha': 0.85},
+        'Chebyshev': {'color': '#27ae60', 'linestyle': '-.', 'marker': '^', 'markersize': 5, 'linewidth': 2.0, 'alpha': 0.85},
+        'Zero (Dijkstra)': {'color': '#8e44ad', 'linestyle': ':', 'marker': 'D', 'markersize': 4, 'linewidth': 2.5, 'alpha': 0.95},
+    }
+    
     for h_name in results[size][density]:
         costs = results[size][density][h_name]['cost']
         if costs:
-            ax.plot(costs, 'o-', label=h_name, alpha=0.7, markersize=3)
+            style = heuristic_styles.get(h_name, {'color': 'black', 'linestyle': '-', 'marker': 'o', 'markersize': 3, 'linewidth': 2.0, 'alpha': 0.8})
+            ax.plot(costs, linestyle=style['linestyle'], color=style['color'],
+                    marker=style['marker'], markersize=style['markersize'],
+                    linewidth=style['linewidth'], alpha=style['alpha'], label=h_name)
     
     ax.set_xlabel('Trial Number')
     ax.set_ylabel('Path Cost')
@@ -268,7 +280,40 @@ def plot_q2_results(results, output_dir='.'):
     fig, ax = plt.subplots(figsize=(10, 6))
     
     methods = ['Independent A*', 'Prioritized Planning', 'CBS', 'H-PCBS']
-    method_colors = {'Independent A*': '#e74c3c', 'Prioritized Planning': '#3498db', 'CBS': '#2ecc71', 'H-PCBS': '#f39c12'}
+    method_styles = {
+        'Independent A*': {
+            'color': '#e74c3c',
+            'linestyle': '-',
+            'marker': 'o',
+            'linewidth': 2.5,
+            'markersize': 8,
+            'alpha': 0.85
+        },
+        'Prioritized Planning': {
+            'color': '#2980b9',
+            'linestyle': '--',
+            'marker': 's',
+            'linewidth': 2.5,
+            'markersize': 7,
+            'alpha': 0.85
+        },
+        'CBS': {
+            'color': '#27ae60',
+            'linestyle': '-.',
+            'marker': '^',
+            'linewidth': 2.5,
+            'markersize': 8,
+            'alpha': 0.85
+        },
+        'H-PCBS': {
+            'color': '#8e44ad',
+            'linestyle': ':',
+            'marker': 'D',
+            'linewidth': 3.0,
+            'markersize': 6,
+            'alpha': 0.95
+        }
+    }
     
     size = sorted(results.keys())[len(results) // 2]  # middle grid size
     agent_counts = sorted(results[size].keys())
@@ -283,8 +328,10 @@ def plot_q2_results(results, output_dir='.'):
                     all_collisions.extend(d['collisions'])
             avg_collisions.append(np.mean(all_collisions) if all_collisions else 0)
         
-        ax.plot(agent_counts, avg_collisions, 'o-', color=method_colors[method],
-               label=method, linewidth=2, markersize=8)
+        st = method_styles[method]
+        ax.plot(agent_counts, avg_collisions, linestyle=st['linestyle'], color=st['color'],
+               marker=st['marker'], linewidth=st['linewidth'], markersize=st['markersize'],
+               alpha=st['alpha'], label=method)
     
     ax.set_xlabel('Number of Agents', fontsize=12)
     ax.set_ylabel('Average Collisions', fontsize=12)
@@ -310,8 +357,10 @@ def plot_q2_results(results, output_dir='.'):
                     all_soc.extend(d['sum_of_costs'])
             avg_soc.append(np.mean(all_soc) if all_soc else 0)
         
-        ax.plot(agent_counts, avg_soc, 'o-', color=method_colors[method],
-               label=method, linewidth=2, markersize=8)
+        st = method_styles[method]
+        ax.plot(agent_counts, avg_soc, linestyle=st['linestyle'], color=st['color'],
+               marker=st['marker'], linewidth=st['linewidth'], markersize=st['markersize'],
+               alpha=st['alpha'], label=method)
     
     ax.set_xlabel('Number of Agents', fontsize=12)
     ax.set_ylabel('Sum of Costs', fontsize=12)
@@ -337,8 +386,10 @@ def plot_q2_results(results, output_dir='.'):
                     all_times.extend(d['time'])
             avg_time.append(np.mean(all_times) * 1000 if all_times else 0)
         
-        ax.plot(agent_counts, avg_time, 'o-', color=method_colors[method],
-               label=method, linewidth=2, markersize=8)
+        st = method_styles[method]
+        ax.plot(agent_counts, avg_time, linestyle=st['linestyle'], color=st['color'],
+               marker=st['marker'], linewidth=st['linewidth'], markersize=st['markersize'],
+               alpha=st['alpha'], label=method)
     
     ax.set_xlabel('Number of Agents', fontsize=12)
     ax.set_ylabel('Runtime (ms)', fontsize=12)
@@ -366,8 +417,10 @@ def plot_q2_results(results, output_dir='.'):
             rate = (total_success / total_trials * 100) if total_trials > 0 else 0
             success_rates.append(rate)
         
-        ax.plot(agent_counts, success_rates, 'o-', color=method_colors[method],
-               label=method, linewidth=2, markersize=8)
+        st = method_styles[method]
+        ax.plot(agent_counts, success_rates, linestyle=st['linestyle'], color=st['color'],
+               marker=st['marker'], linewidth=st['linewidth'], markersize=st['markersize'],
+               alpha=st['alpha'], label=method)
     
     ax.set_xlabel('Number of Agents', fontsize=12)
     ax.set_ylabel('Success Rate (%)', fontsize=12)
@@ -394,8 +447,10 @@ def plot_q2_results(results, output_dir='.'):
                     all_ms.extend(d['makespan'])
             avg_makespan.append(np.mean(all_ms) if all_ms else 0)
         
-        ax.plot(agent_counts, avg_makespan, 'o-', color=method_colors[method],
-               label=method, linewidth=2, markersize=8)
+        st = method_styles[method]
+        ax.plot(agent_counts, avg_makespan, linestyle=st['linestyle'], color=st['color'],
+               marker=st['marker'], linewidth=st['linewidth'], markersize=st['markersize'],
+               alpha=st['alpha'], label=method)
     
     ax.set_xlabel('Number of Agents', fontsize=12)
     ax.set_ylabel('Makespan (time steps)', fontsize=12)
